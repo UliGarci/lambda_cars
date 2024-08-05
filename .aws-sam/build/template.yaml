@@ -1,0 +1,173 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'API para CRUD de carros en DynamoDB
+
+  '
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 256
+  Api:
+    Cors:
+      AllowMethods: '''GET,POST,PUT,DELETE,OPTIONS'''
+      AllowHeaders: '''*'''
+      AllowOrigin: '''*'''
+Resources:
+  CarsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CarsTable
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: LambdaBasicExecution
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+      - PolicyName: DynamoDBAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:GetItem
+            - dynamodb:Scan
+            Resource: arn:aws:dynamodb:*:*:table/CarsTable
+  CarsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: CarsApi
+      StageName: Prod
+  CreateCarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CreateCarFunction
+      Handler: create_car.lambda_handler
+      Runtime: python3.9
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          TABLE_NAME: CarsTable
+      Events:
+        CreateCar:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CarsApi
+            Path: /car
+            Method: POST
+    Metadata:
+      SamResourceId: CreateCarFunction
+  GetCarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: GetCarFunction
+      Handler: get_cars.lambda_handler
+      Runtime: python3.9
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          TABLE_NAME: CarsTable
+      Events:
+        GetCar:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CarsApi
+            Path: /car
+            Method: GET
+    Metadata:
+      SamResourceId: GetCarFunction
+  UpdateCarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: UpdateCarFunction
+      Handler: update_car.lambda_handler
+      Runtime: python3.9
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          TABLE_NAME: CarsTable
+      Events:
+        UpdateCar:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CarsApi
+            Path: /car/{id}
+            Method: PUT
+    Metadata:
+      SamResourceId: UpdateCarFunction
+  DeleteCarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: DeleteCarFunction
+      Handler: delete_car.lambda_handler
+      Runtime: python3.9
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          TABLE_NAME: CarsTable
+      Events:
+        DeleteCar:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: CarsApi
+            Path: /car/{id}
+            Method: DELETE
+    Metadata:
+      SamResourceId: DeleteCarFunction
+Outputs:
+  CarsApiUrl:
+    Description: URL for the Cars API
+    Value:
+      Fn::Sub: https://${CarsApi}.execute-api.${AWS::Region}.amazonaws.com/Prod
+  LambdaExecutionRoleArn:
+    Description: ARN of the Lambda Execution Role
+    Value:
+      Fn::GetAtt:
+      - LambdaExecutionRole
+      - Arn
