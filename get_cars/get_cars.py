@@ -11,6 +11,11 @@ logger.setLevel(logging.DEBUG)
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('CarsTable')
 
+common_headers = {
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE'
+}
 
 def decimal_to_float(obj):
     if isinstance(obj, Decimal):
@@ -41,24 +46,28 @@ def lambda_handler(event, context):
             logger.info("No cars found.")
             return {
                 'statusCode': 204,
-                'body': json.dumps({'message': 'No hay carros registrados aun.'})
+                'body': json.dumps({'message': 'No hay carros registrados aun.'}),
+                'headers': common_headers
             }
 
         return {
             'statusCode': 200,
-            'body': json.dumps(cars)
+            'body': json.dumps(cars),
+            'headers': common_headers
         }
 
     except ClientError as e:
         logger.error("DynamoDB ClientError: %s", e)
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': 'DynamoDB error', 'details': str(e)})
+            'body': json.dumps({'error': 'DynamoDB error', 'details': str(e)}),
+            'headers': common_headers
         }
 
     except Exception as e:
         logger.error("Unexpected error: %s", e)
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
+            'body': json.dumps({'error': 'Internal server error', 'details': str(e)}),
+            'headers': common_headers
         }

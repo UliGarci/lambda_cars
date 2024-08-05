@@ -10,7 +10,11 @@ logger = logging.getLogger()
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('CarsTable')
-
+common_headers = {
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE'
+}
 def lambda_handler(event, context):
     logger.debug("Lambda handler started.")
     logger.debug("Event received: %s", event)
@@ -50,9 +54,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 200,
             'body': json.dumps(response_body),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }
 
     except KeyError as e:
@@ -64,9 +66,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 400,
             'body': json.dumps(response_body),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }
 
     except ClientError as e:
@@ -78,9 +78,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'body': json.dumps(response_body),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }
 
     except Exception as e:
@@ -92,7 +90,5 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'body': json.dumps(response_body),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }

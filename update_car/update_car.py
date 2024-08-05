@@ -9,7 +9,11 @@ logger.setLevel(logging.DEBUG)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('CarsTable')
-
+common_headers = {
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE'
+}
 def lambda_handler(event, context):
     try:
         logger.debug("Received event: %s", json.dumps(event))
@@ -23,9 +27,7 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 400,
                 'body': json.dumps({'error': 'Missing path parameter', 'details': 'ID is required'}),
-                'headers': {
-                    'Content-Type': 'application/json'
-                }
+                'headers': common_headers
             }
 
         # Obtener el cuerpo de la solicitud
@@ -41,9 +43,7 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 400,
                 'body': json.dumps({'error': 'Missing required fields', 'details': ', '.join(missing_fields)}),
-                'headers': {
-                    'Content-Type': 'application/json'
-                }
+                'headers': common_headers
             }
 
         # Preparar la expresión de actualización y los valores de atributos
@@ -70,9 +70,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 200,
             'body': json.dumps({'message': 'Carro actualizado correctamente'}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }
 
     except json.JSONDecodeError as e:
@@ -80,9 +78,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 400,
             'body': json.dumps({'error': 'Invalid JSON format', 'details': str(e)}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }
 
     except ClientError as e:
@@ -90,9 +86,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'body': json.dumps({'error': 'DynamoDB error', 'details': str(e)}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }
 
     except Exception as e:
@@ -100,7 +94,5 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'body': json.dumps({'error': 'Internal server error', 'details': str(e)}),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+            'headers': common_headers
         }

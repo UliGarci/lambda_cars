@@ -9,7 +9,11 @@ logger.setLevel(logging.DEBUG)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('CarsTable')
-
+common_headers = {
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE'
+}
 def lambda_handler(event, context):
     try:
         # Registra el evento recibido
@@ -23,7 +27,8 @@ def lambda_handler(event, context):
             logger.warning("Missing path parameter: id")
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': 'Missing path parameter: id'})
+                'body': json.dumps({'error': 'Missing path parameter: id'}),
+                'headers': common_headers
             }
 
         # Intenta eliminar el elemento
@@ -35,7 +40,8 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
-            'body': json.dumps({'message': 'Carro eliminado exitosamente'})
+            'body': json.dumps({'message': 'Carro eliminado exitosamente'}),
+            'headers': common_headers
         }
 
     except ClientError as e:
@@ -43,23 +49,27 @@ def lambda_handler(event, context):
         if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
             return {
                 'statusCode': 404,
-                'body': json.dumps({'error': 'Car not found'})
+                'body': json.dumps({'error': 'Car not found'}),
+                'headers': common_headers
             }
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': 'DynamoDB error', 'details': str(e)})
+            'body': json.dumps({'error': 'DynamoDB error', 'details': str(e)}),
+            'headers': common_headers
         }
 
     except KeyError as e:
         logger.error(f"KeyError: {e}")
         return {
             'statusCode': 400,
-            'body': json.dumps({'error': 'Missing path parameter', 'details': str(e)})
+            'body': json.dumps({'error': 'Missing path parameter', 'details': str(e)}),
+            'headers': common_headers
         }
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
+            'body': json.dumps({'error': 'Internal server error', 'details': str(e)}),
+            'headers': common_headers
         }
