@@ -1,7 +1,12 @@
 import json
 import boto3
+import logging
 from botocore.exceptions import ClientError
 from decimal import Decimal
+
+# Configura el logger
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('CarsTable')
@@ -19,11 +24,21 @@ def decimal_to_float(obj):
 
 def lambda_handler(event, context):
     try:
+        logger.debug("Received event: %s", json.dumps(event))
+
+        # Realiza la operación de escaneo en la tabla DynamoDB
         response = table.scan()
+        logger.debug("DynamoDB scan response: %s", response)
+
         cars = response['Items']
+        logger.debug("Items retrieved from DynamoDB: %s", cars)
+
+        # Convierte los valores Decimal a float
         cars = decimal_to_float(cars)
+        logger.debug("Items after conversion to float: %s", cars)
 
         if not cars:
+            logger.info("No cars found.")
             return {
                 'statusCode': 204,
                 'body': json.dumps({'message': 'No hay carros registrados aun.'})
@@ -31,16 +46,18 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
-            'body': cars
+            'body': json.dumps(cars)
         }
 
     except ClientError as e:
+        logger.error("DynamoDB ClientError: %s", e)
         return {
             'statusCode': 500,
-            'body': {'error': 'DynamoDB error', 'details': str(e)}
+            'body': json.dumps({'error': 'DynamoDB error', 'details': str(e)})
         }
 
     except Exception as e:
+        logger.error("Unexpected error: %s", e)
         return {
             'statusCode': 500,
             'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
